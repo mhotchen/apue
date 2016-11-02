@@ -4,32 +4,49 @@
 
 #define BUFFSIZE 4096
 
-int main(int argc, char *args[argc])
+int
+main(int argc, char *args[argc])
 {
+    FILE    *fh;
+    ssize_t n;
+    char    buf[BUFFSIZE];
+    char    error = 0;
+
     if (argc != 2) {
-        fprintf(stderr, "Usage: %s [filename]\n", args[0]);
-        exit(EXIT_FAILURE);
+        sprintf(&error, "Usage: %s [filename]", args[0]);
+        goto end;
     }
 
-    FILE *fh = fopen(args[1], "w");
+    fh = fopen(args[1], "w");
     if (!fh) {
-        fprintf(stderr, "Unable to open %s for writing\n", args[1]);
-        exit(EXIT_FAILURE);
+        sprintf(&error, "Unable to open %s for writing", args[1]);
+        goto end;
     }
-
-    int  n;
-    char buf[BUFFSIZE];
 
     while ((n = read(STDIN_FILENO, buf, BUFFSIZE)) > 0) {
         if (write(STDOUT_FILENO, buf, n) != n) {
-            fprintf(stderr, "Write error\n");
-            exit(EXIT_FAILURE);
+            sprintf(&error, "Write error");
+            goto end;
         }
 
         if (write(fileno(fh), buf, n) != n) {
-            fprintf(stderr, "Write error\n");
-            exit(EXIT_FAILURE);
+            sprintf(&error, "Write error");
+            goto end;
         }
+    }
+
+    if (n < 0) {
+        sprintf(&error, "Read error");
+    }
+
+end:
+    if (fh) {
+        fclose(fh);
+    }
+
+    if (error != 0) {
+        fprintf(stderr, "%s\n", &error);
+        exit(EXIT_FAILURE);
     }
 
     exit(EXIT_SUCCESS);
